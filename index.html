@@ -38,13 +38,14 @@ body{
 }
 
 .app{
-  width:390px;min-height:100svh;
+  width:390px;height:100svh;
   background:var(--bg);
-  position:relative;overflow:hidden;
+  position:relative;
   display:flex;flex-direction:column;
+  overflow:hidden;
 }
 
-.screen{display:none;flex-direction:column;min-height:100svh}
+.screen{display:none;flex-direction:column;height:100svh;overflow:hidden}
 .screen.active{display:flex}
 
 /* TOPBAR */
@@ -53,7 +54,7 @@ body{
   padding:14px 16px 12px;
   display:flex;align-items:center;gap:10px;
   border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:10;
+  flex-shrink:0;
 }
 img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;border-radius:50%;border:1.5px solid rgba(245,200,66,0.4);flex-shrink:0;display:block}
 .topbar-title{
@@ -70,14 +71,15 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
 .badge-admin{background:rgba(245,200,66,0.15);color:var(--gold);border-color:rgba(245,200,66,0.3)}
 
 /* CONTENT */
-.content{flex:1;padding:16px;overflow-y:auto;background:var(--bg)}
+.content{flex:1;padding:16px;overflow-y:auto;background:var(--bg);min-height:0}
 
 /* NAV TABS */
 .nav-tabs{
   display:flex;background:var(--surface);
   border-top:1px solid var(--border);
   padding:6px 8px 10px;gap:4px;
-  position:sticky;bottom:0;z-index:10;
+  flex-shrink:0;
+}
 }
 .nav-tab{
   flex:1;padding:8px 4px 6px;text-align:center;cursor:pointer;
