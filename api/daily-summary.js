@@ -206,7 +206,7 @@ Escreve um ponto de situação para hoje. Regras:
       throw new Error('Claude returned no content: ' + JSON.stringify(claudeRes));
     }
 
-    const summaryText = claudeRes.content[0].text.trim();
+    const summaryText = 'draft:' + claudeRes.content[0].text.trim();
 
     // ── 5. Save to Supabase ─────────────────────────────────────────────────
 
