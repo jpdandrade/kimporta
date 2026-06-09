@@ -1021,10 +1021,12 @@ async function loadAll(){
     if(bRows) bRows.forEach(r=>{ if(!bets[r.game_id]) bets[r.game_id]={}; bets[r.game_id][r.player]=r.opt; });
     // summaries
     var {data: sRows} = await sb.from('summaries').select('*').order('date');
-    if(sRows) summaries = sRows.map(r=>({date:r.date,text:r.texto}));
+    if(sRows) summaries = sRows.filter(r=>!r.texto.startsWith('draft:')).map(r=>({date:r.date,text:r.texto}));
+    if(sRows) allSummariesRaw = sRows.map(r=>({date:r.date,text:r.texto})); // admin sees all
     // curiosidades
     var {data: cRows} = await sb.from('curiosidades').select('*').order('date');
-    if(cRows) curiosidades = cRows.map(r=>({date:r.date,text:r.texto}));
+    if(cRows) curiosidades = cRows.filter(r=>!r.texto.startsWith('draft:')).map(r=>({date:r.date,text:r.texto}));
+    if(cRows) allCuriosidadesRaw = cRows.map(r=>({date:r.date,text:r.texto})); // admin sees all
     // config
     var {data: cfgRows} = await sb.from('config').select('*');
     if(cfgRows){
@@ -1636,7 +1638,9 @@ function renderGameCard(g, betVal, hasResult, canBet){
 
 
 // ── SUMMARIES ──────────────────────────────────────────────────────────────
-var summaries = [];
+var summaries = [];       // published only (shown to users)
+var allSummariesRaw = [];  // all including drafts (admin editor)
+var allCuriosidadesRaw = []; // all including drafts (admin editor)
 var summaryIdx = 0;
 
 function todayStr(){
@@ -1815,23 +1819,20 @@ function renderAllSummaries(){
 }
 
 // Admin summary editor navigation
-var admSummaryIdx = -1; // -1 = today (new or existing)
+var admSummaryIdx = 0;
 function initAdmSummary(){
   var today = todayStr();
-  var existing = summaries.findIndex(s => s.date === today);
-  admSummaryIdx = existing >= 0 ? existing : summaries.length; // will be new entry
+  // Admin works from allSummariesRaw (includes drafts)
+  var existing = allSummariesRaw.findIndex(s => s.date === today);
+  admSummaryIdx = existing >= 0 ? existing : allSummariesRaw.length;
   refreshAdmSummaryEditor();
 }
 
 function navSummary(dir){
-  var total = summaries.length; // includes potential "today" slot
-  var newIdx = admSummaryIdx + dir;
-  // allow navigating back through history, and forward to today
-  var minIdx = 0;
-  var maxIdx = summaries.length; // today = length (new) or length-1 (existing)
   var today = todayStr();
-  var existingToday = summaries.findIndex(s => s.date === today);
-  maxIdx = existingToday >= 0 ? existingToday : summaries.length;
+  var existingToday = allSummariesRaw.findIndex(s => s.date === today);
+  var maxIdx = existingToday >= 0 ? existingToday : allSummariesRaw.length;
+  var newIdx = admSummaryIdx + dir;
   if(newIdx < 0 || newIdx > maxIdx) return;
   admSummaryIdx = newIdx;
   refreshAdmSummaryEditor();
@@ -1839,14 +1840,17 @@ function navSummary(dir){
 
 function refreshAdmSummaryEditor(){
   var today = todayStr();
-  var existingToday = summaries.findIndex(s => s.date === today);
-  var maxIdx = existingToday >= 0 ? existingToday : summaries.length;
-  var s = admSummaryIdx < summaries.length ? summaries[admSummaryIdx] : {date: today, text:''};
+  var existingToday = allSummariesRaw.findIndex(s => s.date === today);
+  var maxIdx = existingToday >= 0 ? existingToday : allSummariesRaw.length;
+  var raw = admSummaryIdx < allSummariesRaw.length ? allSummariesRaw[admSummaryIdx] : {date: today, text:''};
+  // Strip draft: prefix for display
+  var displayText = raw.text.startsWith('draft:') ? raw.text.slice(6).trim() : raw.text;
+  var isDraft = raw.text.startsWith('draft:');
   var label = document.getElementById('adm-summary-date-label');
   var nextBtn = document.getElementById('adm-nav-next');
   var textarea = document.getElementById('adm-summary-text');
-  if(label) label.textContent = fmtSummaryDate(s.date);
-  if(textarea) textarea.value = s.text.replace(/<[^>]+>/g,'').replace(/&gt;/g,'>').replace(/&lt;/g,'<');
+  if(label) label.textContent = fmtSummaryDate(raw.date) + (isDraft ? ' · rascunho' : '');
+  if(textarea) textarea.value = displayText.replace(/<[^>]+>/g,'').replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/\\n/g,'\n');
   if(nextBtn){
     var canGoNext = admSummaryIdx < maxIdx;
     nextBtn.style.opacity = canGoNext ? '1' : '0.3';
@@ -1858,19 +1862,26 @@ async function saveSummary(){
   var today = todayStr();
   var text = document.getElementById('adm-summary-text').value.trim();
   if(!text){ showToast('Escreve algo primeiro'); return; }
-  var s = admSummaryIdx < summaries.length ? summaries[admSummaryIdx] : null;
-  var dateToSave = s ? s.date : today;
-  if(s){
-    summaries[admSummaryIdx].text = text;
+  var raw = admSummaryIdx < allSummariesRaw.length ? allSummariesRaw[admSummaryIdx] : null;
+  var dateToSave = raw ? raw.date : today;
+  // Save without draft: prefix — this is the publish action
+  var publishedText = text.replace(/\n/g,'<br>');
+  if(raw){
+    allSummariesRaw[admSummaryIdx].text = publishedText;
   } else {
-    summaries.push({date: today, text: text});
-    admSummaryIdx = summaries.length - 1;
+    allSummariesRaw.push({date: today, text: publishedText});
+    admSummaryIdx = allSummariesRaw.length - 1;
     dateToSave = today;
   }
-  await saveSummaryToDB(dateToSave, text);
+  await saveSummaryToDB(dateToSave, publishedText);
+  // Update published list too
+  var pubIdx = summaries.findIndex(s => s.date === dateToSave);
+  if(pubIdx >= 0) summaries[pubIdx].text = publishedText;
+  else summaries.push({date: dateToSave, text: publishedText});
+  summaries.sort((a,b) => a.date.localeCompare(b.date));
   renderAllSummaries();
   refreshAdmSummaryEditor();
-  showToast('Ponto de situação guardado ✓');
+  showToast('Ponto de situação publicado ✓');
 }
 
 // Game data store
@@ -2192,25 +2203,26 @@ function navCurioCard(wrapId, idx){
 }
 
 // Admin curiosidade editor
-var admCurioIdx = -1;
+var admCurioIdx = 0;
 function initAdmCurio(){
   var today = todayStr();
-  var existing = curiosidades.findIndex(c => c.date === today);
-  admCurioIdx = existing >= 0 ? existing : curiosidades.length;
+  var existing = allCuriosidadesRaw.findIndex(c => c.date === today);
+  admCurioIdx = existing >= 0 ? existing : allCuriosidadesRaw.length;
   refreshAdmCurioEditor();
 }
 function refreshAdmCurioEditor(){
   var today = todayStr();
-  var existing = curiosidades.findIndex(c => c.date === today);
-  var maxIdx = existing >= 0 ? existing : curiosidades.length;
-  var c = admCurioIdx < curiosidades.length ? curiosidades[admCurioIdx] : {date:today,text:''};
+  var existing = allCuriosidadesRaw.findIndex(c => c.date === today);
+  var maxIdx = existing >= 0 ? existing : allCuriosidadesRaw.length;
+  var raw = admCurioIdx < allCuriosidadesRaw.length ? allCuriosidadesRaw[admCurioIdx] : {date:today,text:''};
+  var isDraft = raw.text.startsWith('draft:');
+  var displayText = isDraft ? raw.text.slice(6).trim() : raw.text;
   var label = document.getElementById('adm-curio-date-label');
   var nextBtn = document.getElementById('adm-curio-next');
   var textarea = document.getElementById('adm-curio-text');
-  if(label) label.textContent = fmtSummaryDate(c.date);
+  if(label) label.textContent = fmtSummaryDate(raw.date) + (isDraft ? ' · rascunho' : '');
   if(textarea){
-    // strip HTML tags for editing
-    var plain = c.text.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/&amp;/g,'&');
+    var plain = displayText.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/&amp;/g,'&');
     textarea.value = plain;
   }
   if(nextBtn){
@@ -2221,8 +2233,8 @@ function refreshAdmCurioEditor(){
 }
 function navAdmCurio(dir){
   var today = todayStr();
-  var existing = curiosidades.findIndex(c => c.date === today);
-  var maxIdx = existing >= 0 ? existing : curiosidades.length;
+  var existing = allCuriosidadesRaw.findIndex(c => c.date === today);
+  var maxIdx = existing >= 0 ? existing : allCuriosidadesRaw.length;
   var newIdx = admCurioIdx + dir;
   if(newIdx < 0 || newIdx > maxIdx) return;
   admCurioIdx = newIdx;
@@ -2232,22 +2244,27 @@ async function saveCuriosidade(){
   var today = todayStr();
   var raw = document.getElementById('adm-curio-text').value.trim();
   if(!raw){ showToast('Escreve uma curiosidade primeiro'); return; }
-  // convert newlines to <br> for display, keep existing HTML if present
   var text = raw.indexOf('<') === -1 ? raw.replace(/\n/g, '<br>') : raw;
-  var existing = admCurioIdx < curiosidades.length ? curiosidades[admCurioIdx] : null;
+  var existing = admCurioIdx < allCuriosidadesRaw.length ? allCuriosidadesRaw[admCurioIdx] : null;
   var dateToSave = existing ? existing.date : today;
+  // Save without draft: prefix — this is the publish action
   if(existing){
-    curiosidades[admCurioIdx].text = text;
+    allCuriosidadesRaw[admCurioIdx].text = text;
   } else {
-    curiosidades.push({date: today, text: text});
-    admCurioIdx = curiosidades.length - 1;
+    allCuriosidadesRaw.push({date: today, text: text});
+    admCurioIdx = allCuriosidadesRaw.length - 1;
     dateToSave = today;
   }
   await saveCuriosidadeToDB(dateToSave, text);
+  // Update published list
+  var pubIdx = curiosidades.findIndex(c => c.date === dateToSave);
+  if(pubIdx >= 0) curiosidades[pubIdx].text = text;
+  else curiosidades.push({date: dateToSave, text: text});
+  curiosidades.sort((a,b) => a.date.localeCompare(b.date));
   renderCuriosidadeCard(curiosidades.length-1, 'curio-wrap');
   renderCuriosidadeCard(curiosidades.length-1, 'pub-curio-wrap');
   refreshAdmCurioEditor();
-  showToast('Curiosidade guardada ✓');
+  showToast('Curiosidade publicada ✓');
 }
 
 window.addEventListener('load', async function(){
