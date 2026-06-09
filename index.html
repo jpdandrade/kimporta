@@ -624,7 +624,7 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
     <button class="nav-tab active" id="pub-tab-resumo" onclick="pubNav('resumo')"><i class="ti ti-news"></i>Resumo</button>
     <button class="nav-tab" id="pub-tab-jogos" onclick="pubNav('jogos')"><i class="ti ti-ball-football"></i>Jogos</button>
     <button class="nav-tab" id="pub-tab-classif" onclick="pubNav('classif')"><i class="ti ti-trophy"></i>Classificação</button>
-    <button class="nav-tab" onclick="show('s-login')"><i class="ti ti-login"></i>Entrar</button>
+    <button class="nav-tab" onclick="clearSession();show('s-login')"><i class="ti ti-login"></i>Entrar</button>
   </nav>
 </div>
 
@@ -1107,7 +1107,7 @@ function isPhaseLocked(fase){
   return now >= gameStart;
 }
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-function enterPublic(){show('s-publico')}
+function enterPublic(){ saveSession('__public__','','',false); show('s-publico'); }
 function pubTab(name,btn){ pubNav(name); }
 function pubNav(name){
   ['resumo','jogos','classif'].forEach(n=>{
@@ -1167,6 +1167,10 @@ function restoreSession(){
     if(sess.isAdmin){
       show('s-admin');
       renderAdminGames();
+      return true;
+    }
+    if(sess.user === '__public__'){
+      show('s-publico');
       return true;
     }
     if(sess.user && playerData[sess.user]){
