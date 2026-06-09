@@ -189,6 +189,15 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
 
 /* TEAM CARDS */
 .team-card{border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;background:var(--card)}
+.team-card-btn{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;cursor:pointer;background:var(--surface);
+  transition:all .15s;
+}
+.team-card-btn.team-card-open{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.team-card-btn.team-card-open i{transform:rotate(180deg)}
+.team-members-body{border:1px solid var(--border);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);background:var(--card)}
 .team-header{padding:12px 16px;font-size:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .team-member-row{display:flex;align-items:center;padding:9px 16px;border-top:1px solid var(--border);gap:8px;background:var(--surface)}
 .team-member-name{flex:1;font-size:13px;font-weight:600;color:var(--text)}
@@ -1751,22 +1760,42 @@ function renderLeaderboardHtml(lb, highlightPlayer){
   return html;
 }
 
+function toggleTeamMembers(id){
+  var body = document.getElementById(id);
+  var btn = document.querySelector('[data-team-id="'+id+'"]');
+  if(!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if(btn) btn.classList.toggle('team-card-open', !open);
+}
+
 function renderTeamCardsHtml(tb, highlightPlayer){
   var html = '';
   var ordinals = ['🥇','2º','3º','4º','5º'];
   tb.forEach((t, i) => {
     var c = t.color;
-    html += '<div class="team-card">';
-    html += '<div class="team-header" style="background:'+c+'1e;color:'+c+';border-bottom:1px solid '+c+'33">';
-    html += '<span>'+ordinals[i]+' '+t.name+'</span>';
-    html += '<span>'+(t.avg%1===0?t.avg:t.avg.toFixed(2))+' pts</span></div>';
+    var teamId = 'team-members-'+t.name.replace(/\s/g,'');
+    html += '<div class="team-card" style="margin-bottom:8px">';
+    // collapsible header button
+    html += '<button class="team-card-btn team-card-open" data-team-id="'+teamId+'" onclick="toggleTeamMembers(\''+teamId+'\')" style="background:'+c+'1e;border-color:'+c+'44">';
+    html += '<span style="display:flex;align-items:center;gap:8px">';
+    html += '<span style="font-size:13px;font-weight:800;color:'+c+'">'+ordinals[i]+' '+t.name+'</span>';
+    html += '</span>';
+    html += '<span style="display:flex;align-items:center;gap:8px">';
+    html += '<span style="font-size:13px;font-weight:700;color:'+c+'">'+(t.avg%1===0?t.avg:t.avg.toFixed(2))+' <span style="font-size:10px;font-weight:600;opacity:.7">pts</span></span>';
+    html += '<i class="ti ti-chevron-down" style="font-size:14px;color:'+c+';transition:transform .2s" id="chev-'+teamId+'"></i>';
+    html += '</span></button>';
+    // members body
+    html += '<div id="'+teamId+'" class="team-members-body">';
     t.members.forEach(m => {
       var mPts = calcPlayerPoints(m);
       var isMe = m === highlightPlayer;
-      html += '<div class="team-member-row"><span class="team-member-name">'+m+(isMe?' <span class="chip">tu</span>':'')+'</span>';
-      html += '<span class="team-member-pts">'+mPts+' pts</span></div>';
+      html += '<div class="team-member-row">';
+      html += '<span class="team-member-name">'+m+(isMe?' <span class="chip">tu</span>':'')+'</span>';
+      html += '<span class="team-member-pts">'+mPts+' pts</span>';
+      html += '</div>';
     });
-    html += '</div>';
+    html += '</div></div>';
   });
   return html;
 }
