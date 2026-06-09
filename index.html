@@ -1128,6 +1128,7 @@ async function doLogin(){
     if(p !== ADMIN_PASSWORD){ erro.textContent='Password incorrecta.'; erro.style.display='block'; return; }
     erro.style.display='none';
     document.getElementById('l-password').value='';
+    saveSession('Admin', '🔑', '', true);
     show('s-admin');
     renderAdminGames();
     return;
@@ -1149,8 +1150,43 @@ async function doLogin(){
   renderUserGames();
   renderClassif();
   renderApostasStats();
+  saveSession(n, currentUserAvatar, currentUserEquipa, false);
 }
-function doLogout(){ currentUser=''; currentUserAvatar='⚽'; currentUserEquipa='Andrade'; document.getElementById('l-nome').value=''; document.getElementById('l-password').value=''; document.getElementById('l-erro').style.display='none'; show('s-login'); }
+function doLogout(){ currentUser=''; currentUserAvatar='⚽'; currentUserEquipa='Andrade'; clearSession(); document.getElementById('l-nome').value=''; document.getElementById('l-password').value=''; document.getElementById('l-erro').style.display='none'; show('s-login'); }
+function saveSession(user, avatar, equipa, isAdmin){
+  localStorage.setItem('kimporta_session', JSON.stringify({user, avatar, equipa, isAdmin: !!isAdmin}));
+}
+function clearSession(){
+  localStorage.removeItem('kimporta_session');
+}
+function restoreSession(){
+  try {
+    var s = localStorage.getItem('kimporta_session');
+    if(!s) return false;
+    var sess = JSON.parse(s);
+    if(sess.isAdmin){
+      show('s-admin');
+      renderAdminGames();
+      return true;
+    }
+    if(sess.user && playerData[sess.user]){
+      currentUser = sess.user;
+      currentUserAvatar = sess.avatar || playerData[sess.user].avatar || '⚽';
+      currentUserEquipa = sess.equipa || playerData[sess.user].equipa || 'Andrade';
+      document.getElementById('u-badge').textContent = currentUser;
+      document.getElementById('perfil-name').textContent = currentUser;
+      document.getElementById('perfil-avatar-view').textContent = currentUserAvatar;
+      document.getElementById('perfil-equipa-view').textContent = 'Equipa ' + currentUserEquipa;
+      show('s-apostador');
+      aN('resumo');
+      renderUserGames();
+      renderClassif();
+      renderApostasStats();
+      return true;
+    }
+  } catch(e){}
+  return false;
+}
 function aTab(name,btn){
   document.querySelectorAll('#s-apostador .inner-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
@@ -2318,6 +2354,8 @@ window.addEventListener('load', async function(){
   if(ct){ ct.checked = classifVisible; toggleClassif(classifVisible); }
   if(at){ at.checked = apostasVisible; toggleApostas(apostasVisible); }
   if(bt){ bt.checked = betsOpen; toggleBets(betsOpen); }
+  // restore session — if logged in before reload, skip login screen
+  if(!restoreSession()) show('s-login');
 });
 </script>
 </body>
