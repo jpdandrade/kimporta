@@ -78,6 +78,7 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
   display:flex;background:var(--surface);
   border-top:1px solid var(--border);
   padding:6px 8px 10px;gap:4px;
+  position:sticky;bottom:0;z-index:10;
   flex-shrink:0;
 }
 }
@@ -95,11 +96,13 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
 
 /* INNER TABS */
 .inner-tabs{
-  display:flex;background:transparent;
+  display:flex;background:var(--surface);
   margin:-16px -16px 16px;
   padding:0 16px;
   border-bottom:1px solid var(--border);
   gap:4px;
+  position:sticky;top:0;z-index:9;
+  overflow-x:auto;scrollbar-width:none;
 }
 .inner-tab{
   padding:12px 4px 10px;text-align:center;
