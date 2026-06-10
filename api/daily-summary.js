@@ -2,8 +2,6 @@ const https = require('https');
 
 const SB_URL = 'https://jhisyhfuoqrzdwlwdrjv.supabase.co';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
 function sbFetch(path, method, body, serviceKey) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
@@ -65,14 +63,16 @@ function claudeFetch(prompt, apiKey) {
 }
 
 function todayStr() {
-  // Lisbon time (UTC+1 summer, UTC+0 winter) — use Europe/Lisbon
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' });
 }
 
-// ── main handler ─────────────────────────────────────────────────────────────
+function tomorrowStr() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 
 module.exports = async function handler(req, res) {
-  // Allow manual trigger via GET, and cron via Vercel
   const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
   const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -82,25 +82,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const today = todayStr();
+    const tomorrow = tomorrowStr();
 
-    // ── 1. Fetch data from Supabase ─────────────────────────────────────────
-
-    const [games, betsData, players, summaries, curiosidades] = await Promise.all([
+    // ── 1. Fetch data ────────────────────────────────────────────────────────
+    const [games, betsData, players] = await Promise.all([
       sbFetch('/rest/v1/games?select=*&order=dt.asc', 'GET', null, SB_KEY),
       sbFetch('/rest/v1/bets?select=*', 'GET', null, SB_KEY),
       sbFetch('/rest/v1/jogadores?select=nome,equipa', 'GET', null, SB_KEY),
-      sbFetch('/rest/v1/summaries?select=*&order=date.desc&limit=3', 'GET', null, SB_KEY),
-      sbFetch(`/rest/v1/curiosidades?select=*&date=eq.${today}`, 'GET', null, SB_KEY),
     ]);
 
-    // ── 2. Build context ────────────────────────────────────────────────────
-
-    // Games with results
-    const gamesWithResult = games.filter(g => g.result);
-    const gamesToday = games.filter(g => g.dt === today);
-    const gamesNext3 = games.filter(g => g.dt >= today && !g.result).slice(0, 6);
-
-    // Leaderboard
+    // ── 2. Build context ─────────────────────────────────────────────────────
     const GRUPO_FASES = ['Fase de Grupos · Jornada 1', 'Fase de Grupos · Jornada 2', 'Fase de Grupos · Jornada 3'];
     const fasePts = (fase) => GRUPO_FASES.includes(fase) ? 1 : 2;
 
@@ -114,10 +105,8 @@ module.exports = async function handler(req, res) {
     const scores = {};
     playerNames.forEach(name => {
       scores[name] = 0;
-      gamesWithResult.forEach(g => {
-        if (betsByGame[g.id] && betsByGame[g.id][name] === g.result) {
-          scores[name] += fasePts(g.fase);
-        }
+      games.filter(g => g.result).forEach(g => {
+        if (betsByGame[g.id] && betsByGame[g.id][name] === g.result) scores[name] += fasePts(g.fase);
       });
     });
 
@@ -141,29 +130,27 @@ module.exports = async function handler(req, res) {
       .map(([t, s], i) => `${i + 1}. Equipa ${t} — ${s} pts (média)`)
       .join('\n');
 
-    const todayGamesText = gamesToday.length
-      ? gamesToday.map(g => `${g.home} vs ${g.away} (${g.fase})`).join(', ')
-      : 'Sem jogos hoje';
-
-    const nextGamesText = gamesNext3.length
-      ? gamesNext3.map(g => `${g.dt}: ${g.home} vs ${g.away}`).join('\n')
-      : 'Sem jogos próximos';
-
-    const lastResults = gamesWithResult.slice(-5)
-      .map(g => `${g.home} vs ${g.away}: ${g.result}`)
+    const gamesToday = games.filter(g => g.dt === today);
+    const gamesYesterday = games.filter(g => {
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+      d.setDate(d.getDate() - 1);
+      return g.dt === d.toISOString().slice(0, 10);
+    });
+    const gamesNext = games.filter(g => g.dt >= today && !g.result).slice(0, 8);
+    const recentResults = games.filter(g => g.result).slice(-6)
+      .map(g => `${g.home} vs ${g.away}: ${g.result === '1' ? g.home + ' venceu' : g.result === '2' ? g.away + ' venceu' : 'Empate'}`)
       .join('\n') || 'Sem resultados ainda';
 
-    const curiosidadeHoje = curiosidades[0]
-      ? curiosidades[0].texto.replace(/<[^>]+>/g, '').substring(0, 200)
-      : null;
+    const todayGamesText = gamesToday.length
+      ? gamesToday.map(g => `${g.home} vs ${g.away} (${g.fase})`).join('\n')
+      : 'Sem jogos hoje';
 
-    const recentSummaries = summaries.length
-      ? summaries.map(s => `[${s.date}] ${s.texto.replace(/<[^>]+>/g, '').substring(0, 100)}`).join('\n')
-      : 'Primeiro resumo do torneio';
+    const nextGamesText = gamesNext.length
+      ? gamesNext.map(g => `${g.dt}: ${g.home} vs ${g.away}`).join('\n')
+      : 'Sem jogos próximos';
 
-    // ── 3. Build prompt ─────────────────────────────────────────────────────
-
-    const prompt = `És o cronista oficial do Mundial 2026 Kimporta, a liga de apostas da família Andrade/José/Leal. Escreves diariamente um ponto de situação curto, vivo e com personalidade — como se fosse uma mensagem de WhatsApp de um amigo apaixonado por futebol.
+    // ── 3. Generate PONTO DE SITUAÇÃO ────────────────────────────────────────
+    const summaryPrompt = `És o cronista oficial do Mundial 2026 Kimporta, a liga de apostas da família Andrade/José/Leal. Escreves diariamente um ponto de situação curto, vivo e com personalidade — como se fosse uma mensagem de WhatsApp de um amigo apaixonado por futebol.
 
 DATA DE HOJE: ${today}
 
@@ -174,19 +161,13 @@ PRÓXIMOS JOGOS:
 ${nextGamesText}
 
 ÚLTIMOS RESULTADOS:
-${lastResults}
+${recentResults}
 
 CLASSIFICAÇÃO INDIVIDUAL:
 ${leaderboard}
 
 CLASSIFICAÇÃO POR EQUIPAS:
 ${teamboard}
-
-CURIOSIDADE DO DIA:
-${curiosidadeHoje || '(sem curiosidade para hoje)'}
-
-RESUMOS RECENTES (para não repetir):
-${recentSummaries}
 
 Escreve um ponto de situação para hoje. Regras:
 - Máximo 4 parágrafos curtos
@@ -198,35 +179,71 @@ Escreve um ponto de situação para hoje. Regras:
 - NÃO uses markdown (sem **, sem #, sem listas com -)
 - Responde APENAS com o texto do ponto de situação, sem introdução nem explicação`;
 
-    // ── 4. Call Claude ──────────────────────────────────────────────────────
+    const summaryRes = await claudeFetch(summaryPrompt, CLAUDE_KEY);
+    if (!summaryRes.content || !summaryRes.content[0]) throw new Error('Claude no content (summary): ' + JSON.stringify(summaryRes));
+    const summaryText = 'draft:' + summaryRes.content[0].text.trim();
 
-    const claudeRes = await claudeFetch(prompt, CLAUDE_KEY);
+    // ── 4. Generate CURIOSIDADE DO DIA ───────────────────────────────────────
+    const allTeams = [...new Set([
+      ...gamesToday.map(g => [g.home, g.away]).flat(),
+      ...gamesYesterday.map(g => [g.home, g.away]).flat(),
+      ...gamesNext.slice(0, 4).map(g => [g.home, g.away]).flat(),
+    ])].join(', ');
 
-    if (!claudeRes.content || !claudeRes.content[0]) {
-      throw new Error('Claude returned no content: ' + JSON.stringify(claudeRes));
+    const curiosidadePrompt = `És o editor de conteúdo do Mundial 2026 Kimporta. Escreves uma curiosidade diária sobre o futebol para uma família portuguesa.
+
+DATA DE HOJE: ${today}
+
+JOGOS DE HOJE: ${todayGamesText}
+JOGOS RECENTES/PRÓXIMOS: ${nextGamesText}
+EQUIPAS RELEVANTES HOJE: ${allTeams || 'nenhuma em especial'}
+
+Escreve UMA curiosidade sobre futebol para hoje. Pode ser:
+- Sobre uma das equipas ou jogadores em destaque hoje
+- Sobre um facto histórico de um Mundial anterior
+- Uma estatística surpreendente do futebol mundial
+- Uma história humana inspiradora ligada ao futebol
+- Um facto curioso sobre uma das cidades/estádios do Mundial 2026
+
+Regras:
+- Começa com um título curto e apelativo (máximo 8 palavras)
+- Depois 3-4 frases de desenvolvimento
+- Tom: curioso, interessante, acessível para toda a família
+- Escreve em português de Portugal
+- USA República Checa = Chéquia
+- Responde APENAS com o formato: TITULO|TEXTO (separados por pipe |)
+- O TITULO não deve ter HTML
+- O TEXTO pode ter <strong> para negrito e <em> para itálico`;
+
+    const curiosidadeRes = await claudeFetch(curiosidadePrompt, CLAUDE_KEY);
+    if (!curiosidadeRes.content || !curiosidadeRes.content[0]) throw new Error('Claude no content (curiosidade): ' + JSON.stringify(curiosidadeRes));
+
+    const rawCurio = curiosidadeRes.content[0].text.trim();
+    const pipeIdx = rawCurio.indexOf('|');
+    let curiosidadeText;
+    if (pipeIdx > -1) {
+      const title = rawCurio.slice(0, pipeIdx).trim();
+      const body = rawCurio.slice(pipeIdx + 1).trim();
+      curiosidadeText = 'draft:<strong>' + title + '</strong><br><br>' + body;
+    } else {
+      curiosidadeText = 'draft:' + rawCurio;
     }
 
-    const summaryText = 'draft:' + claudeRes.content[0].text.trim();
-
-    // ── 5. Save to Supabase ─────────────────────────────────────────────────
-
-    await sbFetch('/rest/v1/summaries', 'POST', {
-      date: today,
-      texto: summaryText,
-    }, SB_KEY);
-
-    // Also upsert (in case it already exists)
-    await sbFetch(
-      `/rest/v1/summaries?date=eq.${today}`,
-      'PATCH',
-      { texto: summaryText },
-      SB_KEY
-    );
+    // ── 5. Save both to Supabase ─────────────────────────────────────────────
+    await Promise.all([
+      sbFetch(`/rest/v1/summaries?date=eq.${today}`, 'DELETE', null, SB_KEY).then(() =>
+        sbFetch('/rest/v1/summaries', 'POST', { date: today, texto: summaryText }, SB_KEY)
+      ),
+      sbFetch(`/rest/v1/curiosidades?date=eq.${today}`, 'DELETE', null, SB_KEY).then(() =>
+        sbFetch('/rest/v1/curiosidades', 'POST', { date: today, texto: curiosidadeText }, SB_KEY)
+      ),
+    ]);
 
     return res.status(200).json({
       ok: true,
       date: today,
-      preview: summaryText.substring(0, 120) + '...',
+      summary_preview: summaryText.slice(6, 120) + '...',
+      curiosidade_preview: curiosidadeText.slice(6, 120) + '...',
     });
 
   } catch (err) {
