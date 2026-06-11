@@ -115,9 +115,16 @@ module.exports = async function handler(req, res) {
     const teamScores = {};
     Object.keys(TEAMS).forEach(t => {
       const members = TEAMS[t];
-      teamScores[t] = members.length
-        ? Math.round(members.reduce((s, n) => s + (scores[n] || 0), 0) / members.length * 10) / 10
-        : 0;
+      let totalPts = 0, totalBets = 0;
+      games.filter(g => g.result).forEach(g => {
+        members.forEach(p => {
+          if (betsByGame[g.id] && betsByGame[g.id][p]) {
+            totalBets++;
+            if (betsByGame[g.id][p] === g.result) totalPts += fasePts(g.fase);
+          }
+        });
+      });
+      teamScores[t] = totalBets > 0 ? Math.round(totalPts / totalBets * 100) / 100 : 0;
     });
 
     const leaderboard = playerNames
