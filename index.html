@@ -1695,6 +1695,22 @@ function renderGameCard(g, betVal, hasResult, canBet){
     } else if(canBet && !myBet){
       html += '<p class="bet-note" style="color:var(--text3)">Sem aposta · resultado: <strong>'+r+'</strong></p>';
     }
+    // Show all players' bets with result colouring
+    var betColors2 = {'1':'#3b82f6','X':'#f5c842','2':'#ff4d6d'};
+    var betBg2 = {'1':'rgba(59,130,246,0.15)','X':'rgba(245,200,66,0.15)','2':'rgba(255,77,109,0.15)'};
+    var optLabels2 = {'1':hShort,'X':'X','2':aShort};
+    var chips2 = '';
+    players.forEach(function(p){
+      var b = bets[g.id] && bets[g.id][p];
+      if(!b) return;
+      var correct2 = b === r;
+      var col = correct2 ? 'var(--accent)' : betColors2[b];
+      var bg = correct2 ? 'rgba(0,208,104,0.15)' : betBg2[b];
+      var border = correct2 ? 'rgba(0,208,104,0.4)' : betColors2[b]+'40';
+      var isMe = p === currentUser;
+      chips2 += '<span class="bet-stats-player-chip" style="background:'+bg+';color:'+col+';border:1px solid '+border+(isMe?';font-weight:800':'')+'">'+p+' <strong>'+optLabels2[b]+'</strong></span>';
+    });
+    if(chips2) html += '<div class="bet-stats-players" style="margin-top:8px">'+chips2+'</div>';
   }
   html += '</div>';
   return html;
