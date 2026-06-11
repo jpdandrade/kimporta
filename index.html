@@ -1780,9 +1780,21 @@ function buildLeaderboard(){
 function buildTeamLeaderboard(){
   return Object.keys(TEAMS).map(t => {
     var members = TEAMS[t];
-    var total = members.reduce((s,p) => s + calcPlayerPoints(p), 0);
-    var avg = members.length ? total / members.length : 0;
-    return { name: t, avg, members, color: TEAM_COLORS[t] };
+    // For each game with a result, only count members who actually bet
+    // Team score = sum of points earned / number of (member, game) pairs where member bet
+    var totalPts = 0;
+    var totalBets = 0;
+    gamesData.forEach(g => {
+      if(!g.result) return;
+      members.forEach(p => {
+        if(bets[g.id] && bets[g.id][p]){
+          totalBets++;
+          if(bets[g.id][p] === g.result) totalPts += fasePts(g.fase);
+        }
+      });
+    });
+    var avg = totalBets > 0 ? totalPts / totalBets : 0;
+    return { name: t, avg: Math.round(avg * 100) / 100, members, color: TEAM_COLORS[t] };
   }).sort((a,b) => b.avg - a.avg);
 }
 
