@@ -1643,7 +1643,7 @@ function renderGameCard(g, betVal, hasResult, canBet){
       html += '<button class="bet-btn'+sx+'" disabled><span>X</span><span class="lbl">Empate</span></button>';
       html += '<button class="bet-btn'+s2+'" disabled><span>2</span><span class="lbl">'+aShort+'</span></button>';
       html += '</div>';
-      var lockMsg = phaseLocked ? '🔒 Fase fechada' : '🔒 Apostas pausadas pelo admin';
+      var lockMsg = phaseLocked ? '🔒 Fase fechada' : '🔒 Apostas fechadas';
       if(betVal) html += '<p class="bet-note" style="color:var(--text3)"><i class="ti ti-lock" style="font-size:10px"></i> Aposta registada: <strong>'+betVal+'</strong> · '+lockMsg+'</p>';
       else html += '<p class="bet-note" style="color:var(--text3)"><i class="ti ti-lock" style="font-size:10px"></i> Sem aposta · '+lockMsg+'</p>';
       // Show all players' bets
@@ -1668,7 +1668,25 @@ function renderGameCard(g, betVal, hasResult, canBet){
       if(betVal) html += '<p class="bet-note" style="color:var(--text2)">✓ Aposta guardada: <strong>'+betVal+'</strong> · Pode editar até ao fecho</p>';
     }
   } else if(!canBet && !hasResult){
-    html += '<div class="login-wall-inline"><i class="ti ti-lock" style="font-size:12px"></i> <span onclick="show(&quot;s-login&quot;)" style="cursor:pointer;text-decoration:underline;color:var(--accent);font-weight:600">Entra para apostar</span></div>';
+    var pubPhaseLocked = isPhaseLocked(g.fase);
+    var pubAdminLocked = !betsOpen;
+    if(pubPhaseLocked || pubAdminLocked){
+      var pubLockMsg = pubPhaseLocked ? '🔒 Fase fechada' : '🔒 Apostas fechadas';
+      html += '<div class="login-wall-inline"><i class="ti ti-lock" style="font-size:12px"></i> '+pubLockMsg+'</div>';
+      // Show all players bets
+      var bcPub = {'1':'#3b82f6','X':'#f5c842','2':'#ff4d6d'};
+      var bbPub = {'1':'rgba(59,130,246,0.15)','X':'rgba(245,200,66,0.15)','2':'rgba(255,77,109,0.15)'};
+      var olPub = {'1':hShort,'X':'X','2':aShort};
+      var chipsPub = '';
+      players.forEach(function(p){
+        var b = bets[g.id] && bets[g.id][p];
+        if(!b) return;
+        chipsPub += '<span class="bet-stats-player-chip" style="background:'+bbPub[b]+';color:'+bcPub[b]+';border:1px solid '+bcPub[b]+'40">'+p+' <strong>'+olPub[b]+'</strong></span>';
+      });
+      if(chipsPub) html += '<div class="bet-stats-players" style="margin-top:8px">'+chipsPub+'</div>';
+    } else {
+      html += '<div class="login-wall-inline"><i class="ti ti-lock" style="font-size:12px"></i> <span onclick="show(&quot;s-login&quot;)" style="cursor:pointer;text-decoration:underline;color:var(--accent);font-weight:600">Entra para apostar</span></div>';
+    }
   } else if(hasResult){
     var r = g.result;
     var myBet = (canBet && bets[g.id]) ? bets[g.id][currentUser] : null;
