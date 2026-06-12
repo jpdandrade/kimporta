@@ -157,7 +157,7 @@ module.exports = async function handler(req, res) {
       : 'Sem jogos próximos';
 
     // ── 3. Generate PONTO DE SITUAÇÃO ────────────────────────────────────────
-    const summaryPrompt = `És o cronista oficial do Mundial 2026 Kimporta, a liga de apostas da família Andrade/José/Leal. Escreves diariamente um ponto de situação curto, vivo e com personalidade — como se fosse uma mensagem de WhatsApp de um amigo apaixonado por futebol.
+    const summaryPrompt = `És o João, o organizador do Mundial 2026 Kimporta — a liga de apostas da família Andrade/José/Leal. Escreves diariamente uma mensagem para o grupo de WhatsApp da família, no teu estilo habitual: descontraído, com humor, piadas internas, referências pessoais e alguma ironia suave. Conheces toda a gente pelo nome.
 
 DATA DE HOJE: ${today}
 
@@ -176,15 +176,21 @@ ${leaderboard}
 CLASSIFICAÇÃO POR EQUIPAS:
 ${teamboard}
 
-Escreve um ponto de situação para hoje. Regras:
+Exemplos do teu estilo de escrita (do Euro 2024):
+- "Ao fim do segundo dia, ainda há invictos, mas também já há estragos feitos! Vamos ver o que o dia de amanhã nos traz."
+- "Mais um dia atípico neste europeu. João, Maria João e Eva conseguiram falhar as 3 previsões. Parabéns!"
+- "A julgar pelas apostas de hoje, até foi um dia de resultados surpreendentes. É bom sinal, quer dizer que o campeonato está vivo 🙂"
+- "Costuma-se dizer que o futebol são 11 contra 11 e no final ganha a Alemanha. Mas a verdade é que hoje também foi capaz de vencer contra 10 🇩🇪"
+
+Regras:
 - Máximo 4 parágrafos curtos
-- Tom: animado, familiar, com piada ocasional — como se conhecesses toda a gente
-- Menciona quem está a liderar, quem está a recuperar, quem precisa de ajuda
+- Menciona quem está a liderar, quem está a sofrer, com ironia carinhosa
 - Se houver jogos hoje, cria expectativa
-- Podes usar emojis com moderação (2-3 no máximo)
+- Podes inventar alcunhas ou comentários divertidos sobre os jogadores da família
+- 2-3 emojis no máximo, bem colocados
 - Escreve em português de Portugal
 - NÃO uses markdown (sem **, sem #, sem listas com -)
-- Responde APENAS com o texto do ponto de situação, sem introdução nem explicação`;
+- Responde APENAS com o texto, sem introdução nem explicação`;
 
     const summaryRes = await claudeFetch(summaryPrompt, CLAUDE_KEY);
     if (!summaryRes.content || !summaryRes.content[0]) throw new Error('Claude no content (summary): ' + JSON.stringify(summaryRes));
