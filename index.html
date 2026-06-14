@@ -1872,8 +1872,9 @@ function renderTeamCardsHtml(tb, highlightPlayer){
   tb.forEach((t, i) => {
     var c = t.color;
     var teamId = 'team-members-'+t.name.replace(/\s/g,'');
+    // Sort members by points descending
+    var sortedMembers = t.members.slice().sort((a,b) => calcPlayerPoints(b) - calcPlayerPoints(a));
     html += '<div class="team-card" style="margin-bottom:8px">';
-    // collapsible header button
     html += '<button class="team-card-btn team-card-open" data-team-id="'+teamId+'" onclick="toggleTeamMembers(\''+teamId+'\')" style="background:'+c+'1e;border-color:'+c+'44">';
     html += '<span style="display:flex;align-items:center;gap:8px">';
     html += '<span style="font-size:13px;font-weight:800;color:'+c+'">'+ordinals[i]+' '+t.name+'</span>';
@@ -1882,9 +1883,8 @@ function renderTeamCardsHtml(tb, highlightPlayer){
     html += '<span style="font-size:13px;font-weight:700;color:'+c+'">'+(t.avg%1===0?t.avg:t.avg.toFixed(2))+' <span style="font-size:10px;font-weight:600;opacity:.7">pts</span></span>';
     html += '<i class="ti ti-chevron-down" style="font-size:14px;color:'+c+';transition:transform .2s" id="chev-'+teamId+'"></i>';
     html += '</span></button>';
-    // members body
     html += '<div id="'+teamId+'" class="team-members-body">';
-    t.members.forEach(m => {
+    sortedMembers.forEach(m => {
       var mPts = calcPlayerPoints(m);
       var isMe = m === highlightPlayer;
       html += '<div class="team-member-row">';
