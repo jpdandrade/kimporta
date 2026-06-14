@@ -1813,12 +1813,25 @@ function getPlayerTeam(playerName){
   return 'Andrade';
 }
 
+function calcPlayerHitRate(playerName){
+  // Only games with a known result where the player actually bet
+  var hits = 0, total = 0;
+  gamesData.forEach(g => {
+    if(!g.result) return;
+    if(bets[g.id] && bets[g.id][playerName]){
+      total++;
+      if(bets[g.id][playerName] === g.result) hits++;
+    }
+  });
+  return { hits, total, pct: total > 0 ? Math.round(hits / total * 100) : null };
+}
+
 function buildLeaderboard(){
-  // returns array sorted by pts desc
   return players.map(p => ({
     name: p,
     pts: calcPlayerPoints(p),
-    team: getPlayerTeam(p)
+    team: getPlayerTeam(p),
+    hitRate: calcPlayerHitRate(p)
   })).sort((a,b) => b.pts - a.pts);
 }
 
