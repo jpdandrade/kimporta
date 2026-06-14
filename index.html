@@ -1035,11 +1035,11 @@ async function loadAll(){
     // summaries
     var {data: sRows} = await sb.from('summaries').select('*').order('date');
     if(sRows) summaries = sRows.filter(r=>!r.texto.startsWith('draft:')).map(r=>({date:r.date,text:r.texto}));
-    if(sRows) allSummariesRaw = sRows.map(r=>({date:r.date,text:r.texto})); // admin sees all
+    if(sRows) allSummariesRaw = sRows.map(r=>({date:r.date,text:r.texto})).sort((a,b)=>a.date.localeCompare(b.date)); // admin sees all
     // curiosidades
     var {data: cRows} = await sb.from('curiosidades').select('*').order('date');
     if(cRows) curiosidades = cRows.filter(r=>!r.texto.startsWith('draft:')).map(r=>({date:r.date,text:r.texto}));
-    if(cRows) allCuriosidadesRaw = cRows.map(r=>({date:r.date,text:r.texto})); // admin sees all
+    if(cRows) allCuriosidadesRaw = cRows.map(r=>({date:r.date,text:r.texto})).sort((a,b)=>a.date.localeCompare(b.date)); // admin sees all
     // config
     var {data: cfgRows} = await sb.from('config').select('*');
     if(cfgRows){
