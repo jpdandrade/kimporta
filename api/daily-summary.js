@@ -157,7 +157,7 @@ module.exports = async function handler(req, res) {
       : 'Sem jogos próximos';
 
     // ── 3. Generate PONTO DE SITUAÇÃO ────────────────────────────────────────
-    const summaryPrompt = `És o João, o organizador do Mundial 2026 Kimporta — a liga de apostas da família Andrade/José/Leal. Escreves diariamente uma mensagem para o grupo de WhatsApp da família, no teu estilo habitual: descontraído, com humor, piadas internas, referências pessoais e alguma ironia suave. Conheces toda a gente pelo nome.
+    const summaryPrompt = `És o João, o organizador do Mundial 2026 Kimporta — uma liga de apostas entre amigos e família. Escreves diariamente um resumo curto para partilhar com o grupo.
 
 DATA DE HOJE: ${today}
 
@@ -176,54 +176,67 @@ ${leaderboard}
 CLASSIFICAÇÃO POR EQUIPAS:
 ${teamboard}
 
-Exemplos do teu estilo de escrita (do Euro 2024):
-- "Ao fim do segundo dia, ainda há invictos, mas também já há estragos feitos! Vamos ver o que o dia de amanhã nos traz."
-- "Mais um dia atípico neste europeu. João, Maria João e Eva conseguiram falhar as 3 previsões. Parabéns!"
-- "A julgar pelas apostas de hoje, até foi um dia de resultados surpreendentes. É bom sinal, quer dizer que o campeonato está vivo 🙂"
-- "Costuma-se dizer que o futebol são 11 contra 11 e no final ganha a Alemanha. Mas a verdade é que hoje também foi capaz de vencer contra 10 🇩🇪"
+Exemplos reais do teu estilo (adapta ao contexto do Mundial, não do Euro):
+
+Exemplo 1:
+"Já só faltam 3 grandes jogos! Temos que aproveitar!
+Nesta jornada, Cristina e Eva não acertaram nenhuma previsão, mas não desanimem!
+Andrades e Leais tiveram uma média de jornada idêntica, com os Josés ligeiramente atrás.
+Na classificação geral, Ana mantém-se no cume desta montanha. Guilherme e Gonçalo completam o pódio.
+Manuel está cá em baixo a relaxar, mas com o seu último lugar a ser posto em risco pela Cristina!"
+
+Exemplo 2:
+"Vocês viram isto? Realmente a história do jogo escreve-se mesmo até ao último segundo! 2 dias seguidos assim!
+Guilherme e Lala seguem destacados na frente da jornada. Vamos ver o que o dia de amanhã nos traz."
+
+Exemplo 3:
+"Sim, companheiros, o espetáculo está de volta!
+Apenas Cristina e Ana acertaram em ambos os resultados. João está na cauda do campeonato com 32.5%. Como tem menos que 33.3%, isso quer dizer que, pelas probabilidades, se fizesse tudo à sorte, supostamente teria um resultado melhor do que a tentar... Mais valia ser só organizador..."
+
+Exemplo 4:
+"Isto agora é sempre a andar.
+Nesta jornada, quem se destacou pela positiva foram as matriarcas dos Josés e dos Leais, Maria José e Ana. Curiosamente, quem ficou no fundo foram os patriarcas das mesmas famílias: Manuel e Jorge.
+Houve então uma cambalhota na classificação geral! Ana ultrapassa tudo a todo o gás e isola-se na liderança. Manuel vai desfrutando da vista na cauda do pelotão."
 
 Regras:
+- NÃO uses as palavras "família" ou "malta"
+- Se houver algo interessante no Mundial hoje ou amanhã, menciona brevemente
+- Descreve de forma resumida como correu a jornada aos apostadores (quem acertou, quem falhou, com ironia carinhosa)
+- Descreve a classificação actual de forma resumida — quem lidera, quem está na cauda
 - Máximo 4 parágrafos curtos
-- Menciona quem está a liderar, quem está a sofrer, com ironia carinhosa
-- Se houver jogos hoje, cria expectativa
-- Podes inventar alcunhas ou comentários divertidos sobre os jogadores da família
+- Tom: descontraído, com humor e ironia suave, como se conhecesses toda a gente pelo nome
 - 2-3 emojis no máximo, bem colocados
 - Escreve em português de Portugal
 - NÃO uses markdown (sem **, sem #, sem listas com -)
 - Responde APENAS com o texto, sem introdução nem explicação`;
 
-    const summaryRes = await claudeFetch(summaryPrompt, CLAUDE_KEY);
-    if (!summaryRes.content || !summaryRes.content[0]) throw new Error('Claude no content (summary): ' + JSON.stringify(summaryRes));
-    const summaryText = 'draft:' + summaryRes.content[0].text.trim();
-
-    // ── 4. Generate CURIOSIDADE DO DIA ───────────────────────────────────────
-    const allTeams = [...new Set([
-      ...gamesToday.map(g => [g.home, g.away]).flat(),
-      ...gamesYesterday.map(g => [g.home, g.away]).flat(),
-      ...gamesNext.slice(0, 4).map(g => [g.home, g.away]).flat(),
-    ])].join(', ');
-
-    const curiosidadePrompt = `És o editor de conteúdo do Mundial 2026 Kimporta. Escreves uma curiosidade diária sobre o futebol para uma família portuguesa.
+    const curiosidadePrompt = `És o João, o organizador do Mundial 2026 Kimporta. Escreves uma curiosidade diária sobre futebol para partilhar com o grupo.
 
 DATA DE HOJE: ${today}
-
 JOGOS DE HOJE: ${todayGamesText}
 JOGOS RECENTES/PRÓXIMOS: ${nextGamesText}
-EQUIPAS RELEVANTES HOJE: ${allTeams || 'nenhuma em especial'}
 
-Escreve UMA curiosidade sobre futebol para hoje. Pode ser:
-- Sobre uma das equipas ou jogadores em destaque hoje
-- Sobre um facto histórico de um Mundial anterior
-- Uma estatística surpreendente do futebol mundial
-- Uma história humana inspiradora ligada ao futebol
-- Um facto curioso sobre uma das cidades/estádios do Mundial 2026
+Exemplos reais do teu estilo:
+
+Exemplo 1:
+"Já houve 19 empates neste euro! O máximo desde que o torneio existe. O record anterior era do euro 2016 e 2020 ex aequo, com 16 empates cada."
+
+Exemplo 2:
+"No euro 2004, bateu-se o record de marcador mais jovem da história do torneio por 2 vezes. Primeiro o inglês Wayne Rooney marcou com 18 anos e 237 dias. Passados 4 dias, o suíço Johan Vonlanthen marcou com 18 anos e 141 dias. Record que se mantém até hoje."
+
+Exemplo 3:
+"Com o golo de hoje, Luka Modric tornou-se o jogador mais velho a marcar em europeus, com 38 anos e 289 dias. Este record pertencia ao avançado austríaco Ivica Vastic, que tinha marcado à Polónia, em 2008, com 38 anos e 257 dias."
+
+Exemplo 4:
+"A Dinamarca protagonizou um dos contos de fadas mais memoráveis da história do torneio. Inicialmente não se apurou para o Euro 92, mas foram chamados a apenas 10 dias do início para substituir a Jugoslávia, desqualificada devido à guerra civil. Nada disto foi impedimento para serem campeões europeus!"
 
 Regras:
 - Começa com um título curto e apelativo (máximo 8 palavras)
-- Depois 3-4 frases de desenvolvimento
-- Tom: curioso, interessante, acessível para toda a família
+- 2-4 frases com um facto concreto, número ou história humana
+- Pode ser sobre jogos de hoje, história de Mundiais anteriores, recordes, histórias de jogadores ou selecções
+- Tom: curioso, interessante, acessível — como contas a um amigo
 - Escreve em português de Portugal
-- USA República Checa = Chéquia
+- USA Chéquia em vez de República Checa
 - Responde APENAS com o formato: TITULO|TEXTO (separados por pipe |)
 - O TITULO não deve ter HTML
 - O TEXTO pode ter <strong> para negrito e <em> para itálico`;
