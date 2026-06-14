@@ -1849,9 +1849,18 @@ function renderLeaderboardHtml(lb, highlightPlayer){
   lb.forEach((p, i) => {
     var isMe = p.name === highlightPlayer;
     var rankLabel = i < 3 ? medals[i] : (i+1);
-    html += '<div class="lb-row'+(isMe?' lb-me':'')+'"><span class="lb-rank">'+rankLabel+'</span>';
+    var pctHtml = '';
+    if(p.hitRate && p.hitRate.pct !== null){
+      var pct = p.hitRate.pct;
+      var col = pct >= 60 ? 'var(--accent)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
+      pctHtml = '<span style="font-size:10px;font-weight:700;color:'+col+';min-width:34px;text-align:right">'+pct+'%</span>';
+    }
+    html += '<div class="lb-row'+(isMe?' lb-me':'')+'">';
+    html += '<span class="lb-rank">'+rankLabel+'</span>';
     html += '<span class="lb-name"><span class="lb-dot" style="background:'+TEAM_COLORS[getPlayerTeam(p.name)]+'"></span>'+p.name+(isMe?' <span class="chip">tu</span>':'')+'</span>';
-    html += '<span class="lb-pts">'+p.pts+' <span class="lb-pts-lbl">pts</span></span></div>';
+    html += pctHtml;
+    html += '<span class="lb-pts">'+p.pts+' <span class="lb-pts-lbl">pts</span></span>';
+    html += '</div>';
   });
   html += '</div>';
   return html;
