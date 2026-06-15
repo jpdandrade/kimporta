@@ -241,6 +241,10 @@ Regras:
 - O TITULO não deve ter HTML
 - O TEXTO pode ter <strong> para negrito e <em> para itálico`;
 
+    const summaryRes = await claudeFetch(summaryPrompt, CLAUDE_KEY);
+    if (!summaryRes.content || !summaryRes.content[0]) throw new Error('Claude no content (summary): ' + JSON.stringify(summaryRes));
+    const summaryText = 'draft:' + summaryRes.content[0].text.trim();
+
     const curiosidadeRes = await claudeFetch(curiosidadePrompt, CLAUDE_KEY);
     if (!curiosidadeRes.content || !curiosidadeRes.content[0]) throw new Error('Claude no content (curiosidade): ' + JSON.stringify(curiosidadeRes));
 
