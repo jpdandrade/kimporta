@@ -1027,6 +1027,11 @@ async function loadAll(){
     if(gRows){
       gamesData = gRows.map(r=>({id:r.id,home:r.home,away:r.away,comp:r.comp,fase:r.fase,dt:r.dt,result:r.result||null}));
       gamesData.sort((a,b)=>a.dt.localeCompare(b.dt));
+      // Set nextGameId to avoid collisions with existing IDs
+      gRows.forEach(r => {
+        var m = r.id.match(/^g(\d+)$/);
+        if(m) nextGameId = Math.max(nextGameId, parseInt(m[1]) + 1);
+      });
     }
     // bets
     var {data: bRows} = await sb.from('bets').select('*');
@@ -2044,7 +2049,7 @@ var gamesData = [
   {id:'wc015',home:'Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿',away:'Nigéria 🇳🇬',comp:'Mundial 2026',fase:'Fase de Grupos · Jornada 1',dt:'2026-06-17',result:null},
   {id:'wc016',home:'Portugal 🇵🇹',away:'Colômbia 🇨🇴',comp:'Mundial 2026',fase:'Fase de Grupos · Jornada 1',dt:'2026-06-17',result:null},
 ];
-var nextGameId = 100;
+var nextGameId = 200;
 
 function fmtDate(dt){
   var d = new Date(dt);
