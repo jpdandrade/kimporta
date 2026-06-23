@@ -1237,20 +1237,7 @@ async function bet(game,opt,h,a){
   var label=opt==='X'?'Empate':opt==='1'?h:a;
   showToast('Apostaste '+label+' ✓');
 }
-function createGame(){
-  var h=document.getElementById('a-home').value.trim();
-  var aw=document.getElementById('a-away').value.trim();
-  var comp=document.getElementById('a-comp').value.trim();
-  var fase=document.getElementById('a-fase').value;
-  if(!h||!aw){showToast('Preenche as duas equipas');return}
-  var list=document.getElementById('games-list');
-  var row=document.createElement('div');row.className='admin-row';
-  var rname=h+' vs '+aw;
-  row.innerHTML='<div style="flex:1"><div class="admin-row-name">'+rname+'</div><div class="admin-row-sub">'+(comp?comp+' · ':'')+fase+'</div></div><span class="status s-open" style="font-size:11px;margin-right:6px">Aberto</span><button class="btn-sm" onclick="registerResult(this,\''+rname.replace(/'/g,"\\'")+'\')" >Resultado</button>';
-  list.appendChild(row);
-  showToast('Jogo criado: '+rname);
-  ['a-home','a-away','a-comp','a-dt'].forEach(id=>document.getElementById(id).value='');
-}
+
 var selectedOpt=null;
 var activeResultBtn=null;
 function registerResultById(btn){
@@ -1580,7 +1567,7 @@ function renderGamesByPhase(wrapId, canBet){
       // Use saved state if available, otherwise use default
       var defaultOpen = (phaseId in savedState) ? savedState[phaseId] : ((fi === 0) || (!locked && st.myBets < st.total));
       html += '<div class="phase-card">';
-      html += '<button class="phase-card-btn'+(defaultOpen?' phase-card-open':'')+'" data-phase-id="'+phaseId+'" onclick="togglePhase(''+phaseId+'')">';
+      html += '<button class="phase-card-btn'+(defaultOpen?' phase-card-open':'')+'" data-phase-id="'+phaseId+'" onclick="togglePhase(\''+phaseId+'\')">';
       html += '<span class="phase-card-name">'+fase+'</span>';
       html += '<span class="phase-card-pills">'+progress+pill+'</span>';
       html += '<i class="ti ti-chevron-down phase-card-chevron"></i>';
