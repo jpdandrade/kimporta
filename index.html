@@ -1221,8 +1221,8 @@ function admTab(name,btn){
     var wrap = document.getElementById('adm-classif-wrap');
     if(wrap){
       var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(buildLeaderboard(), null);
-      html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(buildTeamLeaderboard(), null);
       html += renderJornadaClassifHtml('');
+      html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(buildTeamLeaderboard(), null);
       wrap.innerHTML = html;
     }
   }
@@ -1998,8 +1998,8 @@ function renderClassif(){
   var wrap = document.getElementById('classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, currentUser);
-    html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, currentUser);
     html += renderJornadaClassifHtml(currentUser);
+    html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, currentUser);
     wrap.innerHTML = html;
   }
   var eWrap = document.getElementById('a-equipas');
@@ -2012,8 +2012,8 @@ function renderPubClassif(){
   var wrap = document.getElementById('pub-classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, '');
-    html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, '');
     html += renderJornadaClassifHtml('');
+    html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, '');
     wrap.innerHTML = html;
   }
   var eWrap = document.getElementById('pub-equipas');
