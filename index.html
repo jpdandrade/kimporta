@@ -1549,6 +1549,13 @@ function renderGamesByPhase(wrapId, canBet){
   var wrap = document.getElementById(wrapId);
   if(!wrap) return;
   if(!gamesData.length){ wrap.innerHTML='<div style="padding:24px;text-align:center;font-size:13px;color:var(--text3)">Sem jogos por agora.</div>'; return; }
+
+  // Save current open/close state before re-rendering
+  var savedState = {};
+  wrap.querySelectorAll('.phase-card-body').forEach(function(el){
+    if(el.id) savedState[el.id] = el.style.display !== 'none';
+  });
+
   var byComp = groupGames(gamesData);
   var html = '';
   Object.keys(byComp).forEach(comp => {
@@ -1558,7 +1565,6 @@ function renderGamesByPhase(wrapId, canBet){
       var phaseId = wrapId+'-ph-'+fi;
       var st = phaseStatus(fase, canBet);
       var locked = st.locked;
-      // status pill
       var pill = '';
       if(st.done === st.total && st.total > 0){
         pill = '<span class="phase-pill phase-pill-done">Concluída</span>';
@@ -1567,22 +1573,19 @@ function renderGamesByPhase(wrapId, canBet){
       } else {
         pill = '<span class="phase-pill phase-pill-open">Apostas abertas</span>';
       }
-      // bet progress (only for logged users)
       var progress = '';
       if(canBet && !locked && st.total > 0){
-        var pct = Math.round(st.myBets / st.total * 100);
         progress = '<span class="phase-pill phase-pill-bets">'+st.myBets+'/'+st.total+' apostas</span>';
       }
-      // default open: first phase, or has open bets
-      var defaultOpen = (fi === 0) || (!locked && st.myBets < st.total);
+      // Use saved state if available, otherwise use default
+      var defaultOpen = (phaseId in savedState) ? savedState[phaseId] : ((fi === 0) || (!locked && st.myBets < st.total));
       html += '<div class="phase-card">';
-      html += '<button class="phase-card-btn'+(defaultOpen?' phase-card-open':'')+'" data-phase-id="'+phaseId+'" onclick="togglePhase(\''+phaseId+'\')">';
+      html += '<button class="phase-card-btn'+(defaultOpen?' phase-card-open':'')+'" data-phase-id="'+phaseId+'" onclick="togglePhase(''+phaseId+'')">';
       html += '<span class="phase-card-name">'+fase+'</span>';
       html += '<span class="phase-card-pills">'+progress+pill+'</span>';
       html += '<i class="ti ti-chevron-down phase-card-chevron"></i>';
       html += '</button>';
       html += '<div id="'+phaseId+'" class="phase-card-body" style="display:'+(defaultOpen?'block':'none')+'">';
-      // gather all games for this fase
       var faseGames = [];
       Object.keys(byComp[comp][fase]).sort().forEach(dk => {
         byComp[comp][fase][dk].forEach(g => faseGames.push(g));
@@ -1594,7 +1597,6 @@ function renderGamesByPhase(wrapId, canBet){
   });
   wrap.innerHTML = html;
 }
-
 function renderUserGames(){
   renderGamesByPhase('user-games-wrap', true);
 }
