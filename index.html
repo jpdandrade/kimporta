@@ -1219,7 +1219,12 @@ function admTab(name,btn){
   if(name==='apostas') renderApostasAdmin();
   if(name==='classif'){
     var wrap = document.getElementById('adm-classif-wrap');
-    if(wrap) wrap.innerHTML = renderLeaderboardHtml(buildLeaderboard(), null) + '<div style="margin-top:16px">' + renderTeamCardsHtml(buildTeamLeaderboard(), null) + '</div>';
+    if(wrap){
+      var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(buildLeaderboard(), null);
+      html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(buildTeamLeaderboard(), null);
+      html += renderJornadaClassifHtml('');
+      wrap.innerHTML = html;
+    }
   }
 }
 async function bet(game,opt,h,a){
@@ -1935,17 +1940,68 @@ function renderEquipasHtml(){
   return html;
 }
 
+function buildJornadaLeaderboard(fase){
+  // Points per player for a specific fase, only games with results
+  return players.map(p => {
+    var pts = 0, hits = 0, total = 0;
+    gamesData.filter(g => g.fase === fase && g.result).forEach(g => {
+      if(bets[g.id] && bets[g.id][p]){
+        total++;
+        if(bets[g.id][p] === g.result){ pts += fasePts(g.fase); hits++; }
+      }
+    });
+    var pct = total > 0 ? Math.round(hits/total*100) : null;
+    return { name: p, pts, pct };
+  }).sort((a,b) => b.pts - a.pts);
+}
+
+function renderJornadaClassifHtml(highlightPlayer){
+  // Get all fases that have at least one game with a result
+  var fasesWithResults = [...new Set(gamesData.filter(g=>g.result).map(g=>g.fase))];
+  // Sort by FASE_ORDER
+  fasesWithResults.sort((a,b) => {
+    var ia = FASE_ORDER.indexOf(a), ib = FASE_ORDER.indexOf(b);
+    if(ia===-1) ia=999; if(ib===-1) ib=999;
+    return ia-ib;
+  });
+  if(!fasesWithResults.length) return '';
+  var html = '<div class="section-label">Por Jornada</div>';
+  fasesWithResults.forEach((fase, fi) => {
+    var phaseId = 'jornada-classif-'+fi+'-'+highlightPlayer.replace(/\s/g,'');
+    var lb = buildJornadaLeaderboard(fase);
+    var medals = ['🥇','🥈','🥉'];
+    html += '<div class="phase-card">';
+    html += '<button class="phase-card-btn" data-phase-id="'+phaseId+'" onclick="togglePhase(\''+phaseId+'\')">'+
+      '<span class="phase-card-name">'+fase+'</span>'+
+      '<i class="ti ti-chevron-down phase-card-chevron"></i>'+
+      '</button>';
+    html += '<div id="'+phaseId+'" class="phase-card-body" style="display:none"><div class="card">';
+    lb.forEach((p, i) => {
+      var isMe = p.name === highlightPlayer;
+      var rankLabel = i < 3 ? medals[i] : (i+1);
+      var pctHtml = p.pct !== null ? '<span style="font-size:10px;font-weight:700;color:'+(p.pct>=60?'var(--accent)':p.pct>=40?'var(--gold)':'var(--red)')+';min-width:34px;text-align:right">'+p.pct+'%</span>' : '';
+      html += '<div class="lb-row'+(isMe?' lb-me':'')+'">'+
+        '<span class="lb-rank">'+rankLabel+'</span>'+
+        '<span class="lb-name"><span class="lb-dot" style="background:'+TEAM_COLORS[getPlayerTeam(p.name)]+'"></span>'+p.name+(isMe?' <span class="chip">tu</span>':'')+'</span>'+
+        pctHtml+
+        '<span class="lb-pts">'+p.pts+' <span class="lb-pts-lbl">pts</span></span>'+
+        '</div>';
+    });
+    html += '</div></div></div>';
+  });
+  return html;
+}
+
 function renderClassif(){
   var lb = buildLeaderboard();
   var tb = buildTeamLeaderboard();
-  // apostador view
   var wrap = document.getElementById('classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, currentUser);
     html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, currentUser);
+    html += renderJornadaClassifHtml(currentUser);
     wrap.innerHTML = html;
   }
-  // equipas tab
   var eWrap = document.getElementById('a-equipas');
   if(eWrap) eWrap.innerHTML = renderEquipasHtml();
 }
@@ -1957,6 +2013,7 @@ function renderPubClassif(){
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, '');
     html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, '');
+    html += renderJornadaClassifHtml('');
     wrap.innerHTML = html;
   }
   var eWrap = document.getElementById('pub-equipas');
