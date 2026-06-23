@@ -702,6 +702,7 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
       <button class="inner-tab" onclick="admTab('resultados',this)">Resultados</button>
       <button class="inner-tab" onclick="admTab('criar',this)">Criar Jogo</button>
       <button class="inner-tab" onclick="admTab('apostas',this)">Apostas</button>
+      <button class="inner-tab" onclick="admTab('classif',this)">Classificação</button>
       <button class="inner-tab" onclick="admTab('jogadores',this)">Jogadores</button>
       <button class="inner-tab" onclick="admTab('equipas',this)">Equipas</button>
     </div>
@@ -893,6 +894,9 @@ img.topbar-logo{width:32px;height:32px;object-fit:cover;object-position:center;b
         <div class="form-group"><label class="form-label">Data (hora local americana)</label><input class="form-input" id="a-dt" type="date"></div>
         <button class="btn-primary" onclick="createGame()">Criar jogo</button>
       </div>
+    </div>
+    <div id="adm-classif" style="display:none">
+      <div id="adm-classif-wrap"></div>
     </div>
     <div id="adm-jogadores" style="display:none">
       <div class="section-label">Adicionar jogador</div>
@@ -1211,8 +1215,12 @@ function aN(name){
 function admTab(name,btn){
   document.querySelectorAll('#s-admin .inner-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['resumo','resultados','criar','apostas','jogadores','equipas'].forEach(n=>{var el=document.getElementById('adm-'+n);if(el)el.style.display=n===name?'block':'none';});
+  ['resumo','resultados','criar','apostas','classif','jogadores','equipas'].forEach(n=>{var el=document.getElementById('adm-'+n);if(el)el.style.display=n===name?'block':'none';});
   if(name==='apostas') renderApostasAdmin();
+  if(name==='classif'){
+    var wrap = document.getElementById('adm-classif-wrap');
+    if(wrap) wrap.innerHTML = renderLeaderboardHtml(buildLeaderboard(), null) + '<div style="margin-top:16px">' + renderTeamCardsHtml(buildTeamLeaderboard(), null) + '</div>';
+  }
 }
 async function bet(game,opt,h,a){
   if(!betsOpen){ showToast('Apostas bloqueadas pelo admin 🔒'); return; }
