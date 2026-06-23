@@ -1221,7 +1221,7 @@ function admTab(name,btn){
     var wrap = document.getElementById('adm-classif-wrap');
     if(wrap){
       var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(buildLeaderboard(), null);
-        html += renderJornadaClassifHtml('');
+        html += renderJornadaClassifHtml('','pub');
       html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(buildTeamLeaderboard(), null);
       wrap.innerHTML = html;
     }
@@ -2074,7 +2074,7 @@ function renderEvolutionChart(chartId){
     '</div></div>';
 }
 
-function renderJornadaClassifHtml(highlightPlayer){
+function renderJornadaClassifHtml(highlightPlayer, prefix){
   // Get all fases that have at least one game with a result
   var fasesWithResults = [...new Set(gamesData.filter(g=>g.result).map(g=>g.fase))];
   // Sort by FASE_ORDER
@@ -2086,9 +2086,10 @@ function renderJornadaClassifHtml(highlightPlayer){
   if(!fasesWithResults.length) return '';
   var html = '<div class="section-label">Por Jornada</div>';
   // Chart at the top of the section
-  html += renderEvolutionChart('chart-'+highlightPlayer.replace(/\s/g,'')+'jorn');
+  var pfx = prefix||('p'+highlightPlayer.replace(/\s/g,''));
+  html += renderEvolutionChart('chart-'+pfx+'jorn');
   fasesWithResults.forEach((fase, fi) => {
-    var phaseId = 'jornada-classif-'+fi+'-'+highlightPlayer.replace(/\s/g,'');
+    var phaseId = 'jornada-classif-'+fi+'-'+pfx;
     var lb = buildJornadaLeaderboard(fase);
     var medals = ['🥇','🥈','🥉'];
     html += '<div class="phase-card">';
@@ -2119,7 +2120,7 @@ function renderClassif(){
   var wrap = document.getElementById('classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, currentUser);
-    html += renderJornadaClassifHtml(currentUser);
+    html += renderJornadaClassifHtml(currentUser,'user');
     html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, currentUser);
     wrap.innerHTML = html;
   }
@@ -2133,7 +2134,7 @@ function renderPubClassif(){
   var wrap = document.getElementById('pub-classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, '');
-    html += renderJornadaClassifHtml('');
+    html += renderJornadaClassifHtml('','adm');
     html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, '');
     wrap.innerHTML = html;
   }
