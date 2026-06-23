@@ -1221,8 +1221,7 @@ function admTab(name,btn){
     var wrap = document.getElementById('adm-classif-wrap');
     if(wrap){
       var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(buildLeaderboard(), null);
-      html += renderEvolutionChart('chart-adm');
-      html += renderJornadaClassifHtml('');
+        html += renderJornadaClassifHtml('');
       html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(buildTeamLeaderboard(), null);
       wrap.innerHTML = html;
     }
@@ -2016,24 +2015,22 @@ function renderChartInner(chartId){
   var cd = buildChartData();
   if(!cd || !cd.data.length) return '<p style="font-size:12px;color:var(--text3);padding:12px">Sem resultados ainda.</p>';
 
-  var W = 340, H = 200, PL = 32, PR = 8, PT = 12, PB = 36;
+  var W = 340, H = 200, PL = 28, PR = 28, PT = 12, PB = 36;
   var cW = W - PL - PR, cH = H - PT - PB;
   var nFases = cd.fases.length;
   var nPlayers = players.length;
 
   var xStep = nFases > 1 ? cW / (nFases-1) : cW/2;
-  // Rank 1 at top, nPlayers at bottom
-  var yScale = function(rank){ return ((rank-1) / (nPlayers-1)) * cH; };
+  var yScale = function(rank){ return ((rank-1) / Math.max(nPlayers-1,1)) * cH; };
 
   var svg = '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:'+W+'px;display:block">';
 
-  // Grid lines — show rank 1, every 3rd, and last
+  // Grid lines + Y axis labels on BOTH sides for every rank
   for(var r=1; r<=nPlayers; r++){
-    if(r===1 || r===nPlayers || r%3===0){
-      var gy = PT + yScale(r);
-      svg += '<line x1="'+PL+'" y1="'+gy+'" x2="'+(PL+cW)+'" y2="'+gy+'" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>';
-      svg += '<text x="'+(PL-4)+'" y="'+(gy+4)+'" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.4)">'+r+'º</text>';
-    }
+    var gy = PT + yScale(r);
+    svg += '<line x1="'+PL+'" y1="'+gy+'" x2="'+(PL+cW)+'" y2="'+gy+'" stroke="rgba(255,255,255,'+(r===1?'0.15':'0.05')+')\" stroke-width="1"/>';
+    svg += '<text x="'+(PL-3)+'" y="'+(gy+4)+'" text-anchor="end" font-size="8" fill="rgba(255,255,255,'+(r===1?'0.7':'0.35')+')">'+r+'º</text>';
+    svg += '<text x="'+(PL+cW+3)+'" y="'+(gy+4)+'" text-anchor="start" font-size="8" fill="rgba(255,255,255,'+(r===1?'0.7':'0.35')+')">'+r+'º</text>';
   }
 
   // X axis labels
@@ -2099,6 +2096,8 @@ function renderJornadaClassifHtml(highlightPlayer){
   });
   if(!fasesWithResults.length) return '';
   var html = '<div class="section-label">Por Jornada</div>';
+  // Chart at the top of the section
+  html += renderEvolutionChart('chart-'+highlightPlayer.replace(/\s/g,'')+'jorn');
   fasesWithResults.forEach((fase, fi) => {
     var phaseId = 'jornada-classif-'+fi+'-'+highlightPlayer.replace(/\s/g,'');
     var lb = buildJornadaLeaderboard(fase);
@@ -2131,7 +2130,6 @@ function renderClassif(){
   var wrap = document.getElementById('classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, currentUser);
-    html += renderEvolutionChart('chart-user');
     html += renderJornadaClassifHtml(currentUser);
     html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, currentUser);
     wrap.innerHTML = html;
@@ -2146,7 +2144,6 @@ function renderPubClassif(){
   var wrap = document.getElementById('pub-classif-content-wrap');
   if(wrap){
     var html = '<div class="section-label">Individual</div>' + renderLeaderboardHtml(lb, '');
-    html += renderEvolutionChart('chart-pub');
     html += renderJornadaClassifHtml('');
     html += '<div class="section-label">Por equipa (média)</div>' + renderTeamCardsHtml(tb, '');
     wrap.innerHTML = html;
