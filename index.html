@@ -1506,7 +1506,7 @@ function phaseStatus(fase, canBet){
   // returns {total, done, myBets, locked}
   var games = gamesData.filter(g => g.fase === fase);
   var done = games.filter(g => !!g.result).length;
-  var locked = isPhaseLocked(fase);
+  var locked = !betsOpen;
   var myBets = 0;
   if(canBet){
     games.forEach(g => { if(bets[g.id] && bets[g.id][currentUser]) myBets++; });
@@ -1626,7 +1626,6 @@ function betFromEl(btn){
   var g=gamesData.find(x=>x.id===gid);
   if(!g) return;
   if(!betsOpen){ showToast('Apostas bloqueadas pelo admin 🔒'); return; }
-  if(isPhaseLocked(g.fase)){ showToast('Apostas fechadas para esta fase ⏰'); return; }
   if(g.result){ showToast('Este jogo já tem resultado'); return; }
   bet(gid,opt,g.home,g.away);
 }
@@ -1639,18 +1638,17 @@ function renderGameCard(g, betVal, hasResult, canBet){
   var html = '<div class="card card-pad" style="margin-bottom:8px">';
   html += '<div class="game-header"><span class="game-info">'+fmtDayLabel(fmtDayKey(g.dt))+'</span><span class="status '+statusCls+'">'+statusTxt+'</span></div>';
   html += '<div class="teams"><div class="team">'+g.home+'</div><div class="versus">vs</div><div class="team">'+g.away+'</div></div>';
-  var phaseLocked = isPhaseLocked(g.fase);
   var adminLocked = !betsOpen;
   if(canBet && !hasResult){
     var s1 = betVal==='1'?' sel':'', sx = betVal==='X'?' sel':'', s2 = betVal==='2'?' sel':'';
-    if(phaseLocked || adminLocked){
+    if(adminLocked){
       // Show bets as readonly / locked
       html += '<div class="bet-opts">';
       html += '<button class="bet-btn'+s1+'" disabled><span>1</span><span class="lbl">'+hShort+'</span></button>';
       html += '<button class="bet-btn'+sx+'" disabled><span>X</span><span class="lbl">Empate</span></button>';
       html += '<button class="bet-btn'+s2+'" disabled><span>2</span><span class="lbl">'+aShort+'</span></button>';
       html += '</div>';
-      var lockMsg = phaseLocked ? '🔒 Fase fechada' : '🔒 Apostas fechadas';
+      var lockMsg = '🔒 Apostas fechadas';
       if(betVal) html += '<p class="bet-note" style="color:var(--text3)"><i class="ti ti-lock" style="font-size:10px"></i> Aposta registada: <strong>'+betVal+'</strong> · '+lockMsg+'</p>';
       else html += '<p class="bet-note" style="color:var(--text3)"><i class="ti ti-lock" style="font-size:10px"></i> Sem aposta · '+lockMsg+'</p>';
       // Show all players' bets
@@ -1675,10 +1673,9 @@ function renderGameCard(g, betVal, hasResult, canBet){
       if(betVal) html += '<p class="bet-note" style="color:var(--text2)">✓ Aposta guardada: <strong>'+betVal+'</strong> · Pode editar até ao fecho</p>';
     }
   } else if(!canBet && !hasResult){
-    var pubPhaseLocked = isPhaseLocked(g.fase);
     var pubAdminLocked = !betsOpen;
-    if(pubPhaseLocked || pubAdminLocked){
-      var pubLockMsg = pubPhaseLocked ? '🔒 Fase fechada' : '🔒 Apostas fechadas';
+    if(pubAdminLocked){
+      var pubLockMsg = '🔒 Apostas fechadas';
       html += '<div class="login-wall-inline"><i class="ti ti-lock" style="font-size:12px"></i> '+pubLockMsg+'</div>';
       // Show all players bets
       var bcPub = {'1':'#3b82f6','X':'#f5c842','2':'#ff4d6d'};
