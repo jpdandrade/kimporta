@@ -1038,7 +1038,9 @@ async function loadAll(){
       });
     }
     // bets
-    var {data: bRows} = await sb.from('bets').select('*').limit(10000);
+    var {data: bRows, error: bErr} = await sb.from('bets').select('*').limit(10000);
+    if(bErr) console.error('bets error:', bErr);
+    console.log('bets loaded:', bRows ? bRows.length : 0);
     bets = {};
     if(bRows) bRows.forEach(r=>{ if(!bets[r.game_id]) bets[r.game_id]={}; bets[r.game_id][r.player]=r.opt; });
     // summaries
