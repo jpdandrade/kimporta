@@ -1038,11 +1038,19 @@ async function loadAll(){
       });
     }
     // bets
-    var {data: bRows, error: bErr} = await sb.from('bets').select('*').limit(10000);
-    if(bErr) console.error('bets error:', bErr);
-    console.log('bets loaded:', bRows ? bRows.length : 0);
+    // Fetch bets with pagination to bypass Supabase 1000 row limit
     bets = {};
-    if(bRows) bRows.forEach(r=>{ if(!bets[r.game_id]) bets[r.game_id]={}; bets[r.game_id][r.player]=r.opt; });
+    var bPage = 0, bPageSize = 1000;
+    while(true) {
+      var {data: bRows, error: bErr} = await sb.from('bets').select('*').range(bPage * bPageSize, (bPage + 1) * bPageSize - 1);
+      if(bErr) { console.error('bets error:', bErr); break; }
+      if(!bRows || bRows.length === 0) break;
+      bRows.forEach(r=>{ if(!bets[r.game_id]) bets[r.game_id]={}; bets[r.game_id][r.player]=r.opt; });
+      console.log('bets page', bPage, ':', bRows.length, 'rows');
+      if(bRows.length < bPageSize) break;
+      bPage++;
+    }
+    console.log('bets total:', Object.values(bets).reduce((s,g)=>s+Object.keys(g).length,0));
     // summaries
     var {data: sRows} = await sb.from('summaries').select('*').order('date');
     if(sRows) summaries = sRows.filter(r=>!r.texto.startsWith('draft:')).map(r=>({date:r.date,text:r.texto}));
