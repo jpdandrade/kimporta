@@ -2413,7 +2413,7 @@ function toggleGameStats(id){
   if(btn) btn.classList.toggle('bet-stats-game-open', !open);
 }
 
-function buildStatsForGame(g){
+function buildStatsForGame(g, forceShow){
   var gameBets = bets[g.id] || {};
   var n1=0, nX=0, n2=0;
   var betColors = {'1':'#3b82f6','X':'#f5c842','2':'#ff4d6d'};
@@ -2455,13 +2455,15 @@ function buildStatsForGame(g){
     });
     html += '</div></div>';
     var chips = '';
-    players.forEach(function(p){
-      var b = gameBets[p];
-      if(!b) return;
-      var col = betColors[b], bg = betBg[b], lbl = optLabels[b]||b;
-      chips += '<span class="bet-stats-player-chip" style="background:'+bg+';color:'+col+';border:1px solid '+col+'40">'+p+' <strong>'+lbl+'</strong></span>';
-    });
-    if(chips) html += '<div class="bet-stats-players">'+chips+'</div>';
+    if(apostasVisible || forceShow){
+      players.forEach(function(p){
+        var b = gameBets[p];
+        if(!b) return;
+        var col = betColors[b], bg = betBg[b], lbl = optLabels[b]||b;
+        chips += '<span class="bet-stats-player-chip" style="background:'+bg+';color:'+col+';border:1px solid '+col+'40">'+p+' <strong>'+lbl+'</strong></span>';
+      });
+      if(chips) html += '<div class="bet-stats-players">'+chips+'</div>';
+    }
   }
   html += '</div></div>';
   return html;
@@ -2482,7 +2484,7 @@ function buildApostasPhaseCards(prefix){
       html += betCount>0 ? '<span class="phase-pill phase-pill-bets">'+betCount+' apostas</span>' : '<span class="phase-pill phase-pill-done">Sem apostas</span>';
       html += '<i class="ti ti-chevron-down phase-card-chevron"></i></button>';
       html += '<div id="'+phaseId+'" class="phase-card-body" style="display:'+(fi===0?'block':'none')+'">';
-      faseGames.forEach(function(g){ html += buildStatsForGame(g); });
+      faseGames.forEach(function(g){ html += buildStatsForGame(g, true); });
       html += '</div></div>';
     });
   });
