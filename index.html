@@ -2355,6 +2355,8 @@ function toggleApostas(visible){
     ? 'Jogadores veem a distribuição das apostas'
     : 'Estatísticas de apostas escondidas dos jogadores';
   renderApostasStats();
+  renderUserGames();
+  renderPubGames();
   saveConfig('apostas_visible', visible);
   showToast(visible ? 'Estatísticas visíveis ✓' : 'Estatísticas escondidas 🔒');
 }
